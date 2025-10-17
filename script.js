@@ -71,7 +71,7 @@ async function generateCoverLetter() {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are a professional cover letter writer. Create compelling, personalized cover letters that highlight relevant experience and skills. Write in a professional yet personable tone. CRITICAL RULES: 1) NEVER use dashes (hyphen, em dash, en dash, minus), bullet points, or list formatting. 2) Use ONLY complete paragraphs with flowing sentences. 3) Replace all dashes with commas or rewrite sentences. 4) Start with "Greetings," and end with "Regards, Siddharth Samir Khachane". 5) Do NOT include any date. 6) Keep it SHORT (3 to 4 paragraphs). NO DASHES ANYWHERE.'
+                        content: 'You are a professional cover letter writer. ABSOLUTE RULES YOU MUST FOLLOW: 1) NEVER EVER use the dash character (including hyphen -, em dash —, en dash –, minus −) ANYWHERE in your response. 2) If you need to connect words or ideas, use commas, semicolons, or write separate sentences instead. 3) NEVER use bullet points or list formatting. 4) Write ONLY in complete flowing paragraphs. 5) Before outputting, scan your entire response and replace every single dash with a comma or period. 6) Start with "Greetings," and end with "Regards, Siddharth Samir Khachane". 7) Do NOT include dates. 8) Keep it SHORT (3-4 paragraphs). ZERO DASHES ALLOWED IN YOUR OUTPUT.'
                     },
                     {
                         role: 'user',
@@ -91,12 +91,14 @@ async function generateCoverLetter() {
         const data = await response.json();
         let coverLetter = data.choices[0].message.content;
 
-        // Post-process to remove any dashes
-        coverLetter = coverLetter.replace(/—/g, ', ');
-        coverLetter = coverLetter.replace(/–/g, ', ');
-        coverLetter = coverLetter.replace(/\s-\s/g, ', ');
+        // Aggressive post-processing to remove ALL types of dashes
+        coverLetter = coverLetter.replace(/—/g, ', '); // em dash
+        coverLetter = coverLetter.replace(/–/g, ', '); // en dash
+        coverLetter = coverLetter.replace(/−/g, ', '); // minus sign
+        coverLetter = coverLetter.replace(/\s+-\s+/g, ', '); // spaced hyphen
+        coverLetter = coverLetter.replace(/(\w)-(\w)/g, '$1 $2'); // word-word to word word
         
-        // Extract company name for filename (first word usually)
+        // Extract company name for filename (first word)
         extractedCompanyName = jobInfo.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '');
 
         document.getElementById('coverLetterText').textContent = coverLetter;
@@ -113,25 +115,26 @@ async function generateCoverLetter() {
 function createPrompt(resume, jobInfo, jobDescription) {
     let prompt = `Generate a SHORT and concise professional cover letter.\n\n`;
     prompt += `Job Information: ${jobInfo}\n`;
-    prompt += `(Extract the company name and job title from the above information)\n\n`;
+    prompt += `(Extract the company name and job title from the above. The company name is usually the first word or words.)\n\n`;
     
     if (jobDescription) {
         prompt += `Job Description:\n${jobDescription}\n\n`;
     }
     
     prompt += `Candidate's Resume:\n${resume}\n\n`;
-    prompt += `CRITICAL Instructions:\n`;
-    prompt += `1. Start with "Greetings,"\n`;
-    prompt += `2. End with "Regards, Siddharth Samir Khachane"\n`;
-    prompt += `3. Do NOT include any date\n`;
-    prompt += `4. Keep it SHORT (3 to 4 paragraphs)\n`;
-    prompt += `5. Express genuine interest in the position\n`;
-    prompt += `6. Highlight relevant experience and skills\n`;
-    prompt += `7. Use ONLY complete paragraphs with flowing sentences\n`;
-    prompt += `8. NEVER use dashes, hyphens, minus signs, bullet points, or lists\n`;
-    prompt += `9. Replace all dashes with commas or periods\n`;
-    prompt += `10. Write everything in flowing paragraph format\n`;
-    prompt += `NO DASHES OR HYPHENS ANYWHERE.`;
+    prompt += `CRITICAL MANDATORY INSTRUCTIONS:\n`;
+    prompt += `1. NEVER use dashes, hyphens, em dashes, en dashes, or minus signs ANYWHERE\n`;
+    prompt += `2. Use commas, semicolons, or periods instead of dashes\n`;
+    prompt += `3. Start with "Greetings,"\n`;
+    prompt += `4. End with "Regards, Siddharth Samir Khachane"\n`;
+    prompt += `5. Do NOT include any date\n`;
+    prompt += `6. Keep it SHORT (3 to 4 paragraphs only)\n`;
+    prompt += `7. Express genuine interest in the position at the company\n`;
+    prompt += `8. Highlight the most relevant experience and skills\n`;
+    prompt += `9. Write ONLY in complete flowing paragraphs\n`;
+    prompt += `10. NEVER use bullet points or lists\n`;
+    prompt += `11. Before you output, check for ANY dash character and replace it\n\n`;
+    prompt += `REMEMBER: ABSOLUTELY ZERO DASHES IN THE ENTIRE LETTER.`;
     
     return prompt;
 }
@@ -165,7 +168,7 @@ function downloadAsPDF() {
     
     const text = document.getElementById('coverLetterText').textContent;
     
-    // Better PDF formatting
+    // Professional PDF formatting
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margins = 25;
@@ -173,7 +176,7 @@ function downloadAsPDF() {
     const lineHeight = 7;
     
     // Split text into paragraphs
-    const paragraphs = text.split('\n\n');
+    const paragraphs = text.split('\n\n').filter(p => p.trim() !== '');
     
     let yPosition = margins;
     
@@ -198,7 +201,7 @@ function downloadAsPDF() {
         
         // Add space between paragraphs (but not after the last one)
         if (index < paragraphs.length - 1) {
-            yPosition += lineHeight;
+            yPosition += lineHeight * 1.5;
         }
     });
     
