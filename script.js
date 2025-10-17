@@ -1,13 +1,24 @@
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
     const savedApiKey = localStorage.getItem('openai_api_key');
-    const savedResume = localStorage.getItem('user_resume');
     
     if (savedApiKey) {
         document.getElementById('apiKey').value = savedApiKey;
     }
     
-    if (savedResume) {
-        document.getElementById('resume').value = savedResume;
+    // Auto-load the condensed resume file
+    try {
+        const response = await fetch('RESUME_KEYWORDS_COMPACT.md');
+        if (response.ok) {
+            const resumeText = await response.text();
+            document.getElementById('resume').value = resumeText;
+            localStorage.setItem('user_resume', resumeText);
+        }
+    } catch (error) {
+        // Fallback to saved resume if file not found
+        const savedResume = localStorage.getItem('user_resume');
+        if (savedResume) {
+            document.getElementById('resume').value = savedResume;
+        }
     }
 });
 
@@ -64,7 +75,7 @@ async function generateCoverLetter() {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are a professional cover letter writer. Create compelling, personalized cover letters that highlight relevant experience and skills. Write in a professional yet personable tone. NEVER use dashes, hyphens, bullet points, or any list formatting in your responses. Write ONLY in complete paragraphs. The letter should be concise and short. Start with "Greetings," and end with "Regards, Siddharth Samir Khachane". Do NOT include any date. Use full sentences throughout the entire letter in paragraph form only.'
+                        content: 'You are a professional cover letter writer. Create compelling, personalized cover letters that highlight relevant experience and skills. Write in a professional yet personable tone. ABSOLUTELY NEVER use dashes, hyphens, minus signs, bullet points, or any list formatting in your responses. Write ONLY in complete paragraphs with flowing sentences. The letter should be concise and short. Start with "Greetings," and end with "Regards, Siddharth Samir Khachane". Do NOT include any date. Use full sentences throughout the entire letter in paragraph form only. NO DASHES OR HYPHENS ANYWHERE.'
                     },
                     {
                         role: 'user',
@@ -106,7 +117,7 @@ function createPrompt(resume, companyName, jobTitle, jobDescription) {
     
     prompt += `Candidate's Resume:\n${resume}\n\n`;
     prompt += `CRITICAL Instructions:\n`;
-    prompt += `The letter MUST start with "Greetings," and end with "Regards, Siddharth Samir Khachane". Do NOT include any date anywhere in the letter. Keep the letter SHORT and concise (around 3 to 4 paragraphs). Express genuine interest in the ${jobTitle} position at ${companyName}. Highlight the most relevant experience and skills from the resume that match this role. Make it professional and persuasive. Use ONLY complete paragraphs. NEVER use dashes, hyphens, bullet points, or any form of lists. Write everything in flowing paragraph format.`;
+    prompt += `The letter MUST start with "Greetings," and end with "Regards, Siddharth Samir Khachane". Do NOT include any date anywhere in the letter. Keep the letter SHORT and concise (around 3 to 4 paragraphs). Express genuine interest in the ${jobTitle} position at ${companyName}. Highlight the most relevant experience and skills from the resume that match this role. Make it professional and persuasive. Use ONLY complete paragraphs with flowing sentences. ABSOLUTELY NEVER use dashes, hyphens, minus signs, bullet points, or any form of lists anywhere in the letter. Write everything in flowing paragraph format with NO DASHES OR HYPHENS.`;
     
     return prompt;
 }
