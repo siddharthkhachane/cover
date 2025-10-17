@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Cover Letter Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 AI Cover Letter Generator</h1>
+            <p class="subtitle">Create personalized cover letters powered by GPT-4o-mini</p>
+        </header>
+
+        <div class="form-section">
+            <div class="input-group">
+                <label for="apiKey">OpenAI API Key</label>
+                <input type="password" id="apiKey" placeholder="sk-...">
+                <small>Your API key is stored locally and never sent anywhere except OpenAI</small>
+            </div>
+
+            <div class="input-group">
+                <label for="resume">Your Resume</label>
+                <textarea id="resume" rows="10" placeholder="Paste your resume here..."></textarea>
+                <small>This will be saved locally for future use</small>
+            </div>
+
+            <div class="input-group">
+                <label for="companyName">Company Name</label>
+                <input type="text" id="companyName" placeholder="e.g., Google, Microsoft, etc.">
+            </div>
+
+            <div class="input-group">
+                <label for="jobTitle">Job Title</label>
+                <input type="text" id="jobTitle" placeholder="e.g., Software Engineer, Product Manager">
+            </div>
+
+            <div class="input-group">
+                <label for="jobDescription">Job Description (Optional)</label>
+                <textarea id="jobDescription" rows="6" placeholder="Paste the job description here for better results..."></textarea>
+            </div>
+
+            <button class="btn-primary" id="generateBtn" onclick="generateCoverLetter()">
+                ✨ Generate Cover Letter
+            </button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Generating your personalized cover letter...</p>
+        </div>
+
+        <div id="result" class="result-section hidden">
+            <h2>Your Cover Letter</h2>
+            <div class="cover-letter-box">
+                <div id="coverLetterText"></div>
+            </div>
+            <div class="button-group">
+                <button class="btn-secondary" onclick="copyToClipboard()">📋 Copy</button>
+                <button class="btn-secondary" onclick="downloadAsText()">📄 Download TXT</button>
+                <button class="btn-secondary" onclick="downloadAsPDF()">📑 Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
