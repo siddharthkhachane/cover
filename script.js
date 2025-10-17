@@ -30,11 +30,12 @@ document.getElementById('resume').addEventListener('change', (e) => {
     localStorage.setItem('user_resume', e.target.value);
 });
 
+let extractedCompanyName = '';
+
 async function generateCoverLetter() {
     const apiKey = document.getElementById('apiKey').value.trim();
     const resume = document.getElementById('resume').value.trim();
-    const companyName = document.getElementById('companyName').value.trim();
-    const jobTitle = document.getElementById('jobTitle').value.trim();
+    const jobInfo = document.getElementById('jobInfo').value.trim();
     const jobDescription = document.getElementById('jobDescription').value.trim();
 
     if (!apiKey) {
@@ -47,13 +48,8 @@ async function generateCoverLetter() {
         return;
     }
 
-    if (!companyName) {
-        alert('Please enter the company name');
-        return;
-    }
-
-    if (!jobTitle) {
-        alert('Please enter the job title');
+    if (!jobInfo) {
+        alert('Please enter company name and job title');
         return;
     }
 
@@ -62,7 +58,7 @@ async function generateCoverLetter() {
     document.getElementById('generateBtn').disabled = true;
 
     try {
-        const prompt = createPrompt(resume, companyName, jobTitle, jobDescription);
+        const prompt = createPrompt(resume, jobInfo, jobDescription);
         
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -75,7 +71,7 @@ async function generateCoverLetter() {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are a professional cover letter writer. Create compelling, personalized cover letters that highlight relevant experience and skills. Write in a professional yet personable tone. ABSOLUTELY NEVER use dashes, hyphens, minus signs, bullet points, or any list formatting in your responses. Write ONLY in complete paragraphs with flowing sentences. The letter should be concise and short. Start with "Greetings," and end with "Regards, Siddharth Samir Khachane". Do NOT include any date. Use full sentences throughout the entire letter in paragraph form only. NO DASHES OR HYPHENS ANYWHERE.'
+                        content: 'You are a professional cover letter writer. Create compelling, personalized cover letters that highlight relevant experience and skills. Write in a professional yet personable tone. CRITICAL RULES: 1) NEVER use dashes (hyphen, em dash, en dash, minus), bullet points, or list formatting. 2) Use ONLY complete paragraphs with flowing sentences. 3) Replace all dashes with commas or rewrite sentences. 4) Start with "Greetings," and end with "Regards, Siddharth Samir Khachane". 5) Do NOT include any date. 6) Keep it SHORT (3 to 4 paragraphs). NO DASHES ANYWHERE.'
                     },
                     {
                         role: 'user',
@@ -93,7 +89,15 @@ async function generateCoverLetter() {
         }
 
         const data = await response.json();
-        const coverLetter = data.choices[0].message.content;
+        let coverLetter = data.choices[0].message.content;
+
+        // Post-process to remove any dashes
+        coverLetter = coverLetter.replace(/—/g, ', ');
+        coverLetter = coverLetter.replace(/–/g, ', ');
+        coverLetter = coverLetter.replace(/\s-\s/g, ', ');
+        
+        // Extract company name for filename (first word usually)
+        extractedCompanyName = jobInfo.split(' ')[0].replace(/[^a-zA-Z0-9]/g, '');
 
         document.getElementById('coverLetterText').textContent = coverLetter;
         document.getElementById('result').classList.remove('hidden');
@@ -106,10 +110,10 @@ async function generateCoverLetter() {
     }
 }
 
-function createPrompt(resume, companyName, jobTitle, jobDescription) {
-    let prompt = `Generate a SHORT and concise professional cover letter for the following:\n\n`;
-    prompt += `Company: ${companyName}\n`;
-    prompt += `Position: ${jobTitle}\n\n`;
+function createPrompt(resume, jobInfo, jobDescription) {
+    let prompt = `Generate a SHORT and concise professional cover letter.\n\n`;
+    prompt += `Job Information: ${jobInfo}\n`;
+    prompt += `(Extract the company name and job title from the above information)\n\n`;
     
     if (jobDescription) {
         prompt += `Job Description:\n${jobDescription}\n\n`;
@@ -117,7 +121,17 @@ function createPrompt(resume, companyName, jobTitle, jobDescription) {
     
     prompt += `Candidate's Resume:\n${resume}\n\n`;
     prompt += `CRITICAL Instructions:\n`;
-    prompt += `The letter MUST start with "Greetings," and end with "Regards, Siddharth Samir Khachane". Do NOT include any date anywhere in the letter. Keep the letter SHORT and concise (around 3 to 4 paragraphs). Express genuine interest in the ${jobTitle} position at ${companyName}. Highlight the most relevant experience and skills from the resume that match this role. Make it professional and persuasive. Use ONLY complete paragraphs with flowing sentences. ABSOLUTELY NEVER use dashes, hyphens, minus signs, bullet points, or any form of lists anywhere in the letter. Write everything in flowing paragraph format with NO DASHES OR HYPHENS.`;
+    prompt += `1. Start with "Greetings,"\n`;
+    prompt += `2. End with "Regards, Siddharth Samir Khachane"\n`;
+    prompt += `3. Do NOT include any date\n`;
+    prompt += `4. Keep it SHORT (3 to 4 paragraphs)\n`;
+    prompt += `5. Express genuine interest in the position\n`;
+    prompt += `6. Highlight relevant experience and skills\n`;
+    prompt += `7. Use ONLY complete paragraphs with flowing sentences\n`;
+    prompt += `8. NEVER use dashes, hyphens, minus signs, bullet points, or lists\n`;
+    prompt += `9. Replace all dashes with commas or periods\n`;
+    prompt += `10. Write everything in flowing paragraph format\n`;
+    prompt += `NO DASHES OR HYPHENS ANYWHERE.`;
     
     return prompt;
 }
@@ -137,7 +151,8 @@ function downloadAsText() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'cover_letter.txt';
+    const filename = extractedCompanyName ? `${extractedCompanyName}_cover_letter.txt` : 'cover_letter.txt';
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -149,14 +164,44 @@ function downloadAsPDF() {
     const doc = new jsPDF();
     
     const text = document.getElementById('coverLetterText').textContent;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margins = 20;
-    const maxLineWidth = pageWidth - margins * 2;
     
-    const lines = doc.splitTextToSize(text, maxLineWidth);
+    // Better PDF formatting
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margins = 25;
+    const maxLineWidth = pageWidth - (margins * 2);
+    const lineHeight = 7;
+    
+    // Split text into paragraphs
+    const paragraphs = text.split('\n\n');
+    
+    let yPosition = margins;
     
     doc.setFontSize(11);
-    doc.text(lines, margins, margins);
+    doc.setFont('times', 'normal');
     
-    doc.save('cover_letter.pdf');
+    paragraphs.forEach((paragraph, index) => {
+        // Split paragraph into lines that fit the page width
+        const lines = doc.splitTextToSize(paragraph.trim(), maxLineWidth);
+        
+        // Check if we need a new page
+        if (yPosition + (lines.length * lineHeight) > pageHeight - margins) {
+            doc.addPage();
+            yPosition = margins;
+        }
+        
+        // Add the lines
+        lines.forEach(line => {
+            doc.text(line, margins, yPosition);
+            yPosition += lineHeight;
+        });
+        
+        // Add space between paragraphs (but not after the last one)
+        if (index < paragraphs.length - 1) {
+            yPosition += lineHeight;
+        }
+    });
+    
+    const filename = extractedCompanyName ? `${extractedCompanyName}_cover_letter.pdf` : 'cover_letter.pdf';
+    doc.save(filename);
 }
